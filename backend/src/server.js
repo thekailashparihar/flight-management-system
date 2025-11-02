@@ -1,5 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
+import path from "path";
 
 import { establishDBConnection } from "./database/mongodb.config.js";
 
@@ -7,7 +8,9 @@ import apiRouter from "./routes.js";
 import notFoundHandler from "./middlewares/notFoundHandler.js";
 import errorHandler from "./middlewares/errorHandler.js";
 
-export const server = express();
+const server = express();
+
+const __dirname = path.resolve();
 
 server.use(express.json({ limit: "16kb" }));
 
@@ -15,6 +18,15 @@ server.use(cookieParser());
 
 // Mount all API routes under /api/v1
 server.use("/api/v1", apiRouter);
+
+// make ready for deployment
+if (process.env.NODE_ENV === "production") {
+    server.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+    server.get(/.*/, (_, res) => {
+        res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+    });
+}
 
 // Handle 404 - Route not found
 server.use(notFoundHandler);
