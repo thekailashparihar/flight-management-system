@@ -1,0 +1,38 @@
+# Text Files : All text-based files will be normalized to use LF line endings on checkout and commit
+
+* text=auto eol=lf
+
+# Ensure this .gitattributes file itself uses LF line endings
+.gitattributes text eol=lf
+
+# Binary Files: Do not modify binary/media files (Git will treat these as “binary” and leave them alone)
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+
+# Audio/Video
+*.mp3 binary
+*.wav binary
+*.mp4 binary
+*.mov binary
+
+# Archives & Executables
+*.zip binary
+*.tar binary
+*.gz binary
+*.jar binary
+*.exe binary
+*.dll binary
+
+# Documents & Fonts
+*.pdf binary
+*.docx binary
+*.pptx binary
+*.xlsx binary
+*.ttf binary
+*.woff binary

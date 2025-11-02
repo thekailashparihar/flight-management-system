@@ -1,0 +1,27 @@
+{
+    "name": "flight-management-system",
+    "version": "1.0.0",
+    "description": "A comprehensive Flight Management System (FMS) designed to automate airline operations—flight scheduling, ticket booking, passenger management, and real-time status tracking.",
+    "license": "ISC",
+    "author": "Kailash Parihar",
+    "type": "module",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "cross-env NODE_ENV=development nodemon index.js",
+        "pro": "cross-env NODE_ENV=production nodemon index.js"
+    },
+    "dependencies": {
+        "bcryptjs": "^3.0.2",
+        "cookie-parser": "^1.4.7",
+        "express": "^5.1.0",
+        "jsonwebtoken": "^9.0.2",
+        "mongoose": "^8.19.2",
+        "uuid": "^13.0.0"
+    },
+    "devDependencies": {
+        "cross-env": "^10.1.0",
+        "dotenv": "^17.2.3",
+        "nodemon": "^3.1.10"
+    }
+}
