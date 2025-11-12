@@ -1,6 +1,7 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import path from "path";
+import cors from "cors";
 
 import { establishDBConnection } from "./database/mongodb.config.js";
 
@@ -10,10 +11,16 @@ import errorHandler from "./middlewares/errorHandler.js";
 
 const server = express();
 
+server.use(
+    cors({
+        origin: process.env.CORS_ORIGIN,
+        credentials: true,
+    })
+);
+
 const __dirname = path.resolve();
 
 server.use(express.json({ limit: "16kb" }));
-
 server.use(cookieParser());
 
 // Mount all API routes under /api/v1
