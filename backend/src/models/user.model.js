@@ -14,10 +14,7 @@ const userSchema = new mongoose.Schema(
             unique: true,
             lowercase: true,
             trim: true,
-            match: [
-                /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-                "Invalid email format",
-            ],
+            match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, "Invalid email format"],
         },
         mobileNumber: {
             type: String,
@@ -25,15 +22,17 @@ const userSchema = new mongoose.Schema(
             unique: true,
             trim: true,
             validate: {
-                validator: (mobileNumber) =>
-                    /^[0-9]{10,15}$/.test(mobileNumber),
+                validator: (mobileNumber) => /^[0-9]{10,15}$/.test(mobileNumber),
                 message: "Invalid phone number format",
             },
         },
 
+        password: { type: String, required: true, minlength: 8, select: false },
+
+        // Optional user details
+
         dateOfBirth: {
             type: Date,
-            required: true,
             validate: {
                 validator: (dateOfBirth) => dateOfBirth < new Date(),
                 message: "Date of birth must be in the past",
@@ -42,12 +41,8 @@ const userSchema = new mongoose.Schema(
         gender: {
             type: String,
             enum: ["male", "female", "other"],
-            required: true,
+            default: null,
         },
-
-        password: { type: String, required: true, minlength: 8, select: false },
-
-        // Optional user details
 
         // Here user means "passenger or end customer"
         role: {
@@ -60,11 +55,11 @@ const userSchema = new mongoose.Schema(
 
         address: {
             street: { type: String, default: null, trim: true },
-            city: { type: String, required: true, trim: true },
-            district: { type: String, required: true, trim: true },
-            state: { type: String, required: true, trim: true },
-            pincode: { type: String, required: true, trim: true },
-            country: { type: String, required: true, trim: true },
+            city: { type: String, default: null, trim: true },
+            district: { type: String, default: null, trim: true },
+            state: { type: String, default: null, trim: true },
+            pincode: { type: String, default: null, trim: true },
+            country: { type: String, default: null, trim: true },
         },
 
         bookings: {
