@@ -33,16 +33,19 @@ nav a {
     text-transform: uppercase;
 }
 
-nav a:hover {
+nav a:hover,
+.login a:hover,
+.form p a:hover {
     color: red;
 }
 
-.login-btn button {
-    padding: 4px 16px;
-    font-size: 30px;
-    cursor: pointer;
-    border-radius: 1020px;
+.login a {
+    text-decoration: none;
+    color: black;
+    font-size: x-large;
+    font-weight: 500;
 }
+
 /* Footer Styles */
 
 footer {
@@ -55,4 +58,35 @@ footer {
     font-size: x-large;
     font-weight: 500;
     text-transform: uppercase;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.form input {
+    padding: 8px 12px;
+    margin: 4px;
+    border-radius: 25px;
+    width: 25%;
+}
+.form button {
+    background-color: black;
+    color: white;
+    padding: 8px 12px;
+    margin: 4px;
+    border-radius: 25px;
+    width: 20%;
+}
+
+.form p a {
+    color: darkgreen;
+    text-decoration: none;
+}
+.home-page{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
 }
