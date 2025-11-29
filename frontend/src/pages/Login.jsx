@@ -28,8 +28,8 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        setError(""); // clear previous errors
-        setSuccess(false); // reset success state
+        setError("");
+        setSuccess(false);
 
         const validateData = validate(formData);
 
@@ -50,13 +50,12 @@ const Login = () => {
             const body = await res.json();
 
             if (!res.ok) {
-                // Prefer message from server if present
                 const serverMsg = (body && (body.message || body.error)) || res.statusText || "Login failed";
                 setError(serverMsg);
                 return;
             }
 
-            console.log("Server Ka Login response", body);
+            console.log("Server Ka Login response", body); // For debugging
 
             setUserResponse(body.message);
 
@@ -84,40 +83,73 @@ const Login = () => {
     }, [logoutMessage]);
 
     return (
-        <>
-            {logoutMessage && <p style={{ color: "green" }}>{logoutMessage}</p>}
+        <div className="flex items-center justify-center bg-slate-100 min-h-[calc(100vh-80px)]">
+            <div className="w-full max-w-md bg-white shadow-lg rounded-2xl px-6 py-8">
+                {logoutMessage && (
+                    <p className="mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
+                        {logoutMessage}
+                    </p>
+                )}
 
-            <form className="form" onSubmit={handleSubmit}>
-                <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    placeholder="Enter your email"
-                    onChange={handleChange}
-                    required
-                />
-                <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    placeholder="Enter your password"
-                    onChange={handleChange}
-                    required
-                />
-                <button type="submit" disabled={submiting}>
-                    {submiting ? " Logging..." : "Login"}
-                </button>
+                <h2 className="text-2xl font-semibold text-center text-slate-800 mb-1">Login</h2>
+                <p className="text-sm text-center text-slate-500 mb-6">Sign in to continue</p>
 
-                {error && <p style={{ color: "red" }}>{error}</p>}
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            placeholder="Enter your email"
+                            onChange={handleChange}
+                            required
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                    </div>
 
-                {success && <p style={{ color: "green" }}>{userResponse}</p>}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            placeholder="Enter your password"
+                            onChange={handleChange}
+                            required
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                    </div>
 
-                <p>
-                    If you not have Account <Link to="/signup">Sign Up</Link>
-                </p>
-                <br />
-            </form>
-        </>
+                    <button
+                        type="submit"
+                        disabled={submiting}
+                        className="w-full flex justify-center items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                    >
+                        {submiting ? "Logging..." : "Login"}
+                    </button>
+
+                    {error && (
+                        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                            {error}
+                        </p>
+                    )}
+
+                    {success && (
+                        <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
+                            {userResponse}
+                        </p>
+                    )}
+
+                    <p className="text-sm text-center text-slate-600 mt-2">
+                        Don&apos;t have an account?{" "}
+                        <Link to="/signup" className="font-medium text-indigo-600 hover:underline">
+                            Sign Up
+                        </Link>
+                    </p>
+                </form>
+            </div>
+        </div>
     );
 };
 
