@@ -30,8 +30,7 @@ export const getAllUsers = async (req, res) => {
             if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
                 return res.status(400).json({
                     status: "bad request",
-                    message:
-                        "Invalid page or limit. Please double-check your input.",
+                    message: "Invalid page or limit. Please double-check your input.",
                 });
             }
 
@@ -97,16 +96,18 @@ export const getUserById = async (req, res) => {
         const isRequestedUserId = req.params.id;
 
         // Validating user object id received from route parameters
-        isValidObjectId(isRequestedUserId, res);
+        if (!isValidObjectId(isRequestedUserId)) {
+            return res.status(400).json({
+                status: "failed",
+                message: "Invalid User ID",
+            });
+        }
 
         /**
          * Checking if logged-in user is not admin,
          * then he can't fetch profile of other users except himself
          */
-        if (
-            isRequestedUserId !== isLoggedInUserId &&
-            isLoggedInUserRole !== "admin"
-        ) {
+        if (isRequestedUserId !== isLoggedInUserId && isLoggedInUserRole !== "admin") {
             // Sending forbidden response if permissions are insufficient
             return res.status(403).json({
                 status: "forbidden",
@@ -119,9 +120,7 @@ export const getUserById = async (req, res) => {
 
         // Checking if user was not found
         if (!user) {
-            return res
-                .status(404)
-                .json({ status: "failed", message: "User not found" });
+            return res.status(404).json({ status: "failed", message: "User not found" });
         }
 
         // Sending success response after fetching user
@@ -152,16 +151,18 @@ export const updateUserById = async (req, res) => {
         const isRequestedUserId = req.params.id;
 
         // Validating user object id received from route parameters
-        isValidObjectId(isRequestedUserId, res);
+        if (!isValidObjectId(isRequestedUserId)) {
+            return res.status(400).json({
+                status: "failed",
+                message: "Invalid User ID",
+            });
+        }
 
         /**
          * Checking if logged-in user is not admin,
          * then he can't update profile of other users except himself
          */
-        if (
-            isRequestedUserId !== isLoggedInUserId &&
-            isLoggedInUserRole !== "admin"
-        ) {
+        if (isRequestedUserId !== isLoggedInUserId && isLoggedInUserRole !== "admin") {
             // Sending forbidden response if not allowed to update
             return res.status(403).json({
                 status: "forbidden",
@@ -196,9 +197,7 @@ export const updateUserById = async (req, res) => {
         const updates = Object.keys(updateData);
 
         // Checking if all update fields are allowed
-        const isValidUpdate = updates.every((field) =>
-            allowedFields.includes(field)
-        );
+        const isValidUpdate = updates.every((field) => allowedFields.includes(field));
 
         // Sending error response if invalid fields are present
         if (!isValidUpdate) {
@@ -217,9 +216,7 @@ export const updateUserById = async (req, res) => {
 
         // Checking if user was not found
         if (!user) {
-            return res
-                .status(404)
-                .json({ status: "failed", message: "User not found" });
+            return res.status(404).json({ status: "failed", message: "User not found" });
         }
 
         // Sending success response after updating user
@@ -243,16 +240,19 @@ export const deleteUser = async (req, res) => {
         const isRequestedUserId = req.params.id;
 
         // Validating user object id received from route parameters
-        isValidObjectId(isRequestedUserId, res);
+        if (!isValidObjectId(isRequestedUserId)) {
+            return res.status(400).json({
+                status: "failed",
+                message: "Invalid User ID",
+            });
+        }
 
         // Finding user and deleting from database
         const user = await User.findByIdAndDelete(isRequestedUserId);
 
         // Checking if user was not found
         if (!user) {
-            return res
-                .status(404)
-                .json({ status: "failed", message: "User not found" });
+            return res.status(404).json({ status: "failed", message: "User not found" });
         }
 
         // Sending success response after deleting user
