@@ -43,11 +43,6 @@ const FlightSchema = new mongoose.Schema(
                 default: null,
             },
         },
-        status: {
-            type: String,
-            enum: ["scheduled", "inactive", "cancelled"],
-            default: "scheduled",
-        },
 
         services: [String],
 
@@ -60,4 +55,5 @@ const FlightSchema = new mongoose.Schema(
 );
 
 const Flight = mongoose.model("Flight", FlightSchema);
+
 export default Flight;
