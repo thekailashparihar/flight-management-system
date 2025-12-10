@@ -29,6 +29,13 @@ const FlightSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+
+        minimumTurnaroundTime: {
+            type: Number,
+            min: 30,
+            default: 30,
+        },
+
         seatConfig: {
             economy: {
                 type: SeatClassSchema,
