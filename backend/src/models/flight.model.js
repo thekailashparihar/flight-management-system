@@ -1,11 +1,10 @@
 import mongoose from "../database/mongodb.config.js";
 
-const SeatClassSchema = new mongoose.Schema(
+const totalSeatsSchema = new mongoose.Schema(
     {
         total: { type: Number, required: true, min: 0 },
-        price: { type: Number, default: 0, min: 0 },
     },
-    { _id: false }
+    { _id: false },
 );
 
 const FlightSchema = new mongoose.Schema(
@@ -36,19 +35,10 @@ const FlightSchema = new mongoose.Schema(
             default: 30,
         },
 
-        seatConfig: {
-            economy: {
-                type: SeatClassSchema,
-                required: true,
-            },
-            business: {
-                type: SeatClassSchema,
-                default: null,
-            },
-            first: {
-                type: SeatClassSchema,
-                default: null,
-            },
+        seats: {
+            economy: { type: totalSeatsSchema, required: true },
+            business: { type: totalSeatsSchema, default: null },
+            first: { type: totalSeatsSchema, default: null },
         },
 
         services: [String],
@@ -58,7 +48,7 @@ const FlightSchema = new mongoose.Schema(
             default: null,
         },
     },
-    { timestamps: true }
+    { timestamps: true },
 );
 
 const Flight = mongoose.model("Flight", FlightSchema);
