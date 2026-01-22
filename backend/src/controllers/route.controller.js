@@ -151,8 +151,15 @@ export const updateRoute = async (req, res) => {
         const updatedRoute = await Route.findByIdAndUpdate(
             id,
             { $set: updateData },
-            { new: true, runValidators: true }
+            { new: true, runValidators: true },
         );
+
+        if (!updatedRoute) {
+            return res.status(404).json({
+                status: "error",
+                message: "Route not found",
+            });
+        }
 
         return res.status(200).json({
             status: "success",
