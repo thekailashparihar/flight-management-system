@@ -124,7 +124,199 @@ export const createSchedule = async (req, res) => {
     }
 };
 
-export const getSchedules = (req, res) => {};
-export const getScheduleById = (req, res) => {};
-export const updateSchedule = (req, res) => {};
-export const deleteSchedule = (req, res) => {};
+export const getSchedules = async (req, res) => {
+    try {
+        const [schedules, totalSchedules] = await Promise.all([Schedule.find().lean(), Schedule.countDocuments()]);
+
+        return res.status(200).json({
+            status: "success",
+            message: "Schedules fetched successfully",
+            totalSchedules,
+            schedules,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: "error", message: "Internal server error", error: error.message });
+    }
+};
+
+export const getScheduleById = async (req, res) => {
+    try {
+        const { scheduleId } = req.params;
+
+        // Validate schedule ID
+        if (!isValidObjectId(scheduleId)) {
+            return res.status(400).json({ status: "error", message: "Invalid schedule ID" });
+        }
+
+        // Find schedule by ID
+        const schedule = await Schedule.findById(scheduleId);
+
+        if (!schedule) {
+            return res.status(404).json({ status: "failed", message: "Schedule not found" });
+        }
+
+        return res.status(200).json({
+            status: "success",
+            message: "Schedule fetched successfully",
+            schedule,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: "error", message: "Internal server error", error: error.message });
+    }
+};
+export const updateSchedule = async (req, res) => {
+    try {
+        const { scheduleId } = req.params;
+        const { departureDateTime, arrivalDateTime, seats } = req.body;
+
+        // Validate schedule ID
+        if (!isValidObjectId(scheduleId)) {
+            return res.status(400).json({ status: "error", message: "Invalid schedule ID" });
+        }
+
+        // Find existing schedule
+        const schedule = await Schedule.findById(scheduleId);
+        if (!schedule) {
+            return res.status(404).json({ status: "failed", message: "Schedule not found" });
+        }
+
+        // Fetch flight details for validation
+        const flight = await Flight.findById(schedule.flightId);
+        if (!flight) {
+            return res.status(404).json({ status: "failed", message: "Flight not found" });
+        }
+
+        // Validate and process departure/arrival times if provided
+        if (departureDateTime || arrivalDateTime) {
+            const newDeparture = departureDateTime ? new Date(departureDateTime) : schedule.departureDateTime;
+            const newArrival = arrivalDateTime ? new Date(arrivalDateTime) : schedule.arrivalDateTime;
+
+            // Validate date format
+            if (isNaN(newDeparture.getTime()) || isNaN(newArrival.getTime())) {
+                return res.status(400).json({ status: "error", message: "Invalid departure or arrival datetime" });
+            }
+
+            // Departure must be before arrival
+            if (newDeparture >= newArrival) {
+                return res.status(400).json({ status: "error", message: "Departure time must be before arrival time" });
+            }
+
+            // Check for schedule conflicts
+            const bufferTimeInMs = flight.minimumTurnaroundTime * 60000;
+            const bufferedDeparture = new Date(newDeparture.getTime() - bufferTimeInMs);
+
+            const conflict = await Schedule.findOne({
+                _id: { $ne: scheduleId },
+                flightId: schedule.flightId,
+                departureDateTime: { $lte: newArrival },
+                arrivalDateTime: { $gte: bufferedDeparture },
+            });
+
+            if (conflict) {
+                return res.status(409).json({
+                    status: "failed",
+                    message: "Schedule conflict: another schedule overlaps this time range",
+                    data: {
+                        scheduleId: conflict._id,
+                        departureDateTime: conflict.departureDateTime,
+                        arrivalDateTime: conflict.arrivalDateTime,
+                    },
+                });
+            }
+
+            schedule.departureDateTime = newDeparture;
+            schedule.arrivalDateTime = newArrival;
+        }
+
+        // Update seats configuration if provided
+        if (seats) {
+            const seatsConfig = {};
+            const seatTypes = ["economy", "business", "first"];
+
+            for (let type of seatTypes) {
+                const seatType = seats[type];
+
+                if (!seatType) continue;
+
+                const { total, booked = 0, price } = seatType;
+
+                if (total === null || total === undefined) continue;
+
+                const totalSeatsInFlight = flight.seats?.[type]?.total;
+
+                if (totalSeatsInFlight == null) {
+                    return res.status(404).json({
+                        status: "failed",
+                        message: `No ${type} class is available on this flight.`,
+                    });
+                }
+
+                if (total > totalSeatsInFlight) {
+                    return res.status(400).json({
+                        status: "failed",
+                        message: `We only have ${totalSeatsInFlight} ${type} seats available — you requested ${total}.`,
+                    });
+                }
+
+                if (booked > total) {
+                    return res.status(400).json({
+                        status: "failed",
+                        message: `${type} booked seats (${booked}) should not be more than total seats (${total})`,
+                    });
+                }
+
+                if (price == null || !Number.isFinite(price) || price < 0) {
+                    return res.status(400).json({
+                        status: "failed",
+                        message: `${type} seat price is required and must be a non-negative number.`,
+                    });
+                }
+
+                seatsConfig[type] = { total, booked, price };
+            }
+
+            schedule.seats = seatsConfig;
+        }
+
+        // Save updated schedule
+        await schedule.save();
+
+        return res.status(200).json({
+            status: "success",
+            message: "Schedule updated successfully",
+            schedule,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: "error", message: "Internal server error", error: error.message });
+    }
+};
+
+export const deleteSchedule = async (req, res) => {
+    try {
+        const { scheduleId } = req.params;
+
+        // Validate schedule ID
+        if (!isValidObjectId(scheduleId)) {
+            return res.status(400).json({ status: "error", message: "Invalid schedule ID" });
+        }
+
+        // Find and delete schedule
+        const schedule = await Schedule.findByIdAndDelete(scheduleId);
+
+        if (!schedule) {
+            return res.status(404).json({ status: "failed", message: "Schedule not found" });
+        }
+
+        return res.status(200).json({
+            status: "success",
+            message: "Schedule deleted successfully",
+            schedule,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: "error", message: "Internal server error", error: error.message });
+    }
+};
