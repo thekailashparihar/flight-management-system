@@ -19,11 +19,10 @@ ScheduleSeatClassSchema.virtual("available").get(function () {
 });
 
 // Validation: booked seats should not exceed total seats
-ScheduleSeatClassSchema.pre("validate", function (next) {
+ScheduleSeatClassSchema.pre("validate", function () {
     if (this.booked > this.total) {
         throw new Error("Booked seats cannot exceed total seats");
     }
-    next();
 });
 
 const scheduleSchema = new mongoose.Schema(
