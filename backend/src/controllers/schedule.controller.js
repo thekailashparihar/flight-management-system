@@ -66,6 +66,13 @@ export const createSchedule = async (req, res) => {
         for (let type of seatTypes) {
             const seatType = seats?.[type];
 
+            if (!seats?.economy) {
+                return res.status(400).json({
+                    status: "failed",
+                    message: "Economy seats are required for every schedule",
+                });
+            }
+
             if (!seatType) continue;
 
             const { total, booked = 0, price } = seatType;
@@ -126,7 +133,10 @@ export const createSchedule = async (req, res) => {
 
 export const getSchedules = async (req, res) => {
     try {
-        const [schedules, totalSchedules] = await Promise.all([Schedule.find().lean(), Schedule.countDocuments()]);
+        const [schedules, totalSchedules] = await Promise.all([
+            Schedule.find().lean({ virtuals: true }),
+            Schedule.countDocuments(),
+        ]);
 
         return res.status(200).json({
             status: "success",
@@ -142,7 +152,7 @@ export const getSchedules = async (req, res) => {
 
 export const getScheduleById = async (req, res) => {
     try {
-        const { scheduleId } = req.params;
+        const scheduleId = req.params.id;
 
         // Validate schedule ID
         if (!isValidObjectId(scheduleId)) {
@@ -166,9 +176,10 @@ export const getScheduleById = async (req, res) => {
         return res.status(500).json({ status: "error", message: "Internal server error", error: error.message });
     }
 };
+
 export const updateSchedule = async (req, res) => {
     try {
-        const { scheduleId } = req.params;
+        const scheduleId = req.params.id;
         const { departureDateTime, arrivalDateTime, seats } = req.body;
 
         // Validate schedule ID
@@ -232,17 +243,15 @@ export const updateSchedule = async (req, res) => {
 
         // Update seats configuration if provided
         if (seats) {
-            const seatsConfig = {};
+            // ensure seats object exists
+            schedule.seats = schedule.seats ?? {};
+
             const seatTypes = ["economy", "business", "first"];
 
             for (let type of seatTypes) {
                 const seatType = seats[type];
 
                 if (!seatType) continue;
-
-                const { total, booked = 0, price } = seatType;
-
-                if (total === null || total === undefined) continue;
 
                 const totalSeatsInFlight = flight.seats?.[type]?.total;
 
@@ -253,31 +262,63 @@ export const updateSchedule = async (req, res) => {
                     });
                 }
 
-                if (total > totalSeatsInFlight) {
+                const existing = schedule.seats?.[type] ?? {};
+
+                // Use provided values if present, otherwise keep existing
+                const newTotal = seatType.total !== undefined ? seatType.total : existing.total;
+                const newBooked = seatType.booked !== undefined ? seatType.booked : (existing.booked ?? 0);
+                const newPrice = seatType.price !== undefined ? seatType.price : existing.price;
+
+                if (type === "economy" && newTotal === 0) {
                     return res.status(400).json({
                         status: "failed",
-                        message: `We only have ${totalSeatsInFlight} ${type} seats available — you requested ${total}.`,
+                        message: "Economy seats cannot be zero",
                     });
                 }
 
-                if (booked > total) {
+                if (newTotal === undefined || newTotal === null || !Number.isFinite(newTotal) || newTotal < 0) {
                     return res.status(400).json({
                         status: "failed",
-                        message: `${type} booked seats (${booked}) should not be more than total seats (${total})`,
+                        message: `${type} total seats is required and must be a non-negative number.`,
                     });
                 }
 
-                if (price == null || !Number.isFinite(price) || price < 0) {
+                if (!Number.isFinite(newBooked) || newBooked < 0) {
                     return res.status(400).json({
                         status: "failed",
-                        message: `${type} seat price is required and must be a non-negative number.`,
+                        message: `${type} booked must be a non-negative number.`,
                     });
                 }
 
-                seatsConfig[type] = { total, booked, price };
+                if (!Number.isFinite(newPrice) || newPrice < 0) {
+                    return res.status(400).json({
+                        status: "failed",
+                        message: `${type} price is required and must be a non-negative number.`,
+                    });
+                }
+
+                if (newTotal > totalSeatsInFlight) {
+                    return res.status(400).json({
+                        status: "failed",
+                        message: `We only have ${totalSeatsInFlight} ${type} seats available — you requested ${newTotal}.`,
+                    });
+                }
+
+                if (newBooked > newTotal) {
+                    return res.status(400).json({
+                        status: "failed",
+                        message: `${type} booked seats (${newBooked}) should not be more than total seats (${newTotal}).`,
+                    });
+                }
+
+                schedule.seats[type] = {
+                    total: newTotal,
+                    booked: newBooked,
+                    price: newPrice,
+                };
             }
 
-            schedule.seats = seatsConfig;
+            // console.log("updated seats:", schedule.seats);
         }
 
         // Save updated schedule
@@ -296,7 +337,7 @@ export const updateSchedule = async (req, res) => {
 
 export const deleteSchedule = async (req, res) => {
     try {
-        const { scheduleId } = req.params;
+        const scheduleId = req.params.id;
 
         // Validate schedule ID
         if (!isValidObjectId(scheduleId)) {
@@ -308,6 +349,17 @@ export const deleteSchedule = async (req, res) => {
 
         if (!schedule) {
             return res.status(404).json({ status: "failed", message: "Schedule not found" });
+        }
+
+        const seatTypes = ["economy", "business", "first"];
+
+        for (let type of seatTypes) {
+            if (schedule.seats[type].booked > 0) {
+                return res.status(400).json({
+                    status: "failed",
+                    message: `Cannot delete schedule with active bookings for ${type} seats`,
+                });
+            }
         }
 
         return res.status(200).json({
